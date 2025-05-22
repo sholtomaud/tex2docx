@@ -1,0 +1,49 @@
+\title{A Comprehensive Test Document: \textbf{Features} and \textit{Examples}}
+
+\section{Introduction and Basic Formatting}
+This document serves as a comprehensive test for the LaTeX to DOCX converter.
+It includes various LaTeX elements to ensure they are processed correctly.
+Here is some \textbf{bold text}, and here is some \textit{italic text}.
+Sometimes, we have \textbf{bold} and \textit{italic} text right next to each other.
+Let's test a citation here: According to \citet[Chapter 1, p.~10]{test_key_intro_2023}, this is a good start.
+
+\subsection{Paragraphs and Citations}
+Paragraphs can contain multiple sentences. They can also contain various citation styles.
+For example, a parenthetical citation looks like this: \citep{test_key_para_A_2022, test_key_para_B_2022}.
+We can also include prenotes in parenthetical citations, such as \citep[see details in][Section 2]{test_key_para_C_2021}.
+The author is \citeauthor{test_key_author_2000} and the year is \citeyearpar[around page 5]{test_key_year_1999}.
+This is \textbf{important text} \textit{followed by italics}.
+
+\section{Lists and Inline Elements}
+Lists are common in documents.
+
+\subsection{Unordered Lists (Itemize)}
+Here is an unordered list:
+\begin{itemize}
+    \item First bullet item. \textbf{This part is bold}.
+    \item Second bullet item with \textit{italicized words} and a citation \citep{test_key_bullet_2024}.
+    \item A third one, \citet[e.g.,][]{test_key_bullet_citet_2024} discusses this.
+    \item Plain item.
+\end{itemize}
+
+\subsection{Ordered Lists (Enumerate)}
+And now an ordered list:
+\begin{enumerate}
+    \item First numbered item with a citation: \citep{test_key_enum_A_2023}.
+    \item Second item: \textit{Details here} and \textbf{bold text here}. \citeauthor{test_key_enum_author_B_2023} wrote about it.
+    \item Third item with another citation \citeyearpar[p.~77]{test_key_enum_year_C_2023}.
+\end{enumerate}
+
+\section{Images}
+Images are also important.
+\includegraphics{images/sample_image.png}
+The above image has no specific options.
+
+Below is an image with a width specified:
+\includegraphics[width=5cm, caption=This is a test caption]{images/another_image.jpeg}
+Text following the image.
+
+\section{Conclusion}
+This is the final paragraph of the comprehensive test document. It ensures that all elements are brought together.
+We hope this covers all \textbf{major features}. \textit{Good luck with testing!}
+Final check with a citation \citep[see generally][]{final_key_2025}.
