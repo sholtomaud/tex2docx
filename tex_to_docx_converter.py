@@ -409,8 +409,9 @@ def generate_docx(json_data: list, output_docx_path: str):
                 if width_val: doc.add_picture(image_path, width=width_val)
                 else: doc.add_picture(image_path)
             except Exception as e:
-                print(f"Error adding image {image_path}: {type(e).__name__} - {e}. Skipping.", file=sys.stderr)
+                print(f"Error adding image {image_path}: {type(e).__name__} - {e}. Skipping and re-raising.", file=sys.stderr)
                 p = doc.add_paragraph(); add_runs_for_formatted_text(p, f"[Error adding image: {image_path}]")
+                raise e
     doc.save(output_docx_path)
 
 # --- Internal Tests ---
@@ -473,7 +474,7 @@ def main():
 
     if not args.input_file or not args.output_file:
         parser.print_help()
-        print("\nError: input_file and output_file are required unless --run-internal-tests is specified.")
+        print("\nError: input_file and output_file are required unless --run-internal-tests is specified.", file=sys.stderr)
         sys.exit(1)
 
     try:
@@ -492,7 +493,7 @@ def main():
         generate_docx(parsed_json_data, args.output_file) # type: ignore
         print(f"Conversion successful! Output written to '{args.output_file}'")
     except Exception as e:
-        print(f"An error occurred during LaTeX parsing or DOCX generation: {e}", file=sys.stderr) # Changed this line
+        print(f"An error occurred during LaTeX parsing or DOCX generation: {e}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":
