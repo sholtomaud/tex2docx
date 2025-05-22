@@ -51,14 +51,37 @@ The script will convert this into a special field in the DOCX document. When ope
 
 The goal is to bridge the gap between LaTeX-based writing workflows and Zotero's powerful citation management within Word.
 
-## Internal Tests
+## Testing
 
-The script includes a basic suite of embedded unit tests for the core LaTeX parsing logic. To run these tests, use the `--run-internal-tests` flag:
+The project includes a comprehensive testing setup to ensure reliability and correctness.
 
+### Test Suites
+
+Two main test suites are available:
+
+*   **`test_parser.py`**: This suite contains unit tests that focus specifically on the LaTeX parsing logic located in `tex_to_docx_converter.py`. These tests verify the correct translation of various LaTeX commands and structures into the intermediate JSON format. The internal tests mentioned previously (run with `--run-internal-tests`) are a subset of these parser tests.
+*   **`test_converter_e2e.py`**: This suite provides end-to-end tests for the full TeX to DOCX conversion process. These tests execute the `tex_to_docx_converter.py` script as a subprocess, simulating real-world usage. They cover scenarios like:
+    *   Successful conversion of documents with valid images.
+    *   Correct error handling and script termination when problematic or missing images are encountered.
+    *   Verification of output DOCX files and error messages in the script's output.
+
+### Running Tests
+
+To run all tests (both unit and end-to-end), ensure you have `pytest` and all other dependencies from `requirements.txt` installed. You can typically install these using:
 ```bash
-python tex_to_docx_converter.py --run-internal-tests
+pip install -r requirements.txt
+pip install pytest pytest-cov # If pytest and coverage tool are not in requirements
 ```
-The script will then print a summary of test results to the console.
+
+Then, execute `pytest` from the root directory of the project:
+```bash
+pytest
+```
+This will discover and run all tests in files named `test_*.py` or `*_test.py`.
+
+### Improved Error Handling
+
+The converter now incorporates stricter error handling, especially for image processing. If an image referenced in the LaTeX document cannot be processed (e.g., due to file corruption, an unsupported format, or the file not being a true image), the script will report the error and terminate. This prevents the generation of incomplete DOCX files with missing or improperly processed images and provides clearer feedback to the user.
 
 ## Known Issues
 

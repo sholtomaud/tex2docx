@@ -409,8 +409,9 @@ def generate_docx(json_data: list, output_docx_path: str):
                 if width_val: doc.add_picture(image_path, width=width_val)
                 else: doc.add_picture(image_path)
             except Exception as e:
-                print(f"Error adding image {image_path}: {type(e).__name__} - {e}. Skipping.")
+                print(f"Error adding image {image_path}: {type(e).__name__} - {e}. Skipping and re-raising.")
                 p = doc.add_paragraph(); add_runs_for_formatted_text(p, f"[Error adding image: {image_path}]")
+                raise e
     doc.save(output_docx_path)
 
 # --- Internal Tests ---
