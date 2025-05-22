@@ -28,7 +28,7 @@ def test_e2e_placeholder():
 # More tests will be added in subsequent steps.
 
 def test_e2e_successful_image_inclusion():
-    "\"\"Tests end-to-end conversion with a valid image.\"\"\"
+    """Tests end-to-end conversion with a valid image."""
     os.makedirs(TEST_DATA_DIR, exist_ok=True) # Ensure base test data dir exists
     
     input_tex_file = TEST_DATA_DIR / "test_valid_image.tex"
@@ -85,7 +85,7 @@ This is a test.
         assert "Image not found" not in result.stderr, f"Image not found message in stderr: {result.stderr}"
 
 def test_e2e_problematic_image_causes_failure():
-    "\"\"Tests that conversion fails correctly when a problematic image is encountered.\"\"\"
+    """Tests that conversion fails correctly when a problematic image is encountered."""
     os.makedirs(TEST_DATA_DIR, exist_ok=True) # Ensure base test data dir exists
     
     input_tex_file = TEST_DATA_DIR / "test_problematic_image.tex"
