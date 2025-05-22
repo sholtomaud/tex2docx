@@ -14,15 +14,14 @@ The script aims to support a simplified set of LaTeX styles and elements, includ
 
 ## Dependencies
 
-The script requires the following Python libraries:
-- `python-docx` (for creating and manipulating DOCX files)
-- `lxml` (used by `python-docx` for XML processing)
+The script requires the following Python libraries, listed in `requirements.txt`:
+- `python-docx>=0.8.11` (for creating and manipulating DOCX files)
+- `lxml>=4.5.0` (used by `python-docx` for XML processing)
 
 You can install them using pip:
 ```bash
-pip install python-docx lxml
+pip install -r requirements.txt
 ```
-*(A `requirements.txt` file will be added later for easier dependency management).*
 
 ## How to Run
 
@@ -52,6 +51,19 @@ The script will convert this into a special field in the DOCX document. When ope
 
 The goal is to bridge the gap between LaTeX-based writing workflows and Zotero's powerful citation management within Word.
 
+## Internal Tests
+
+The script includes a basic suite of embedded unit tests for the core LaTeX parsing logic. To run these tests, use the `--run-internal-tests` flag:
+
+```bash
+python tex_to_docx_converter.py --run-internal-tests
+```
+The script will then print a summary of test results to the console.
+
+## Known Issues
+
+- **Single-Line List Environments:** The LaTeX parser currently does not correctly interpret `itemize` or `enumerate` list environments if the entire environment (including `\begin`, `\item`s, and `\end`) is written on a single line. List items should be on separate lines for correct parsing. This was identified by the internal test `test_parse_itemize_list_simple`.
+
 ---
 
-*Further details on advanced usage, testing, and contributions
+*Further details on advanced usage and contributions will be added later.*
