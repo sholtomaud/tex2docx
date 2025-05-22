@@ -385,21 +385,31 @@ def generate_docx(json_data: list, output_docx_path: str):
                 width_val = None
                 if width_str:
                     val_match = re.match(r'([\d\.]+)\s*(cm|in|px)?', width_str) # Using raw string
-                    if val_match:
+                    if val_match: # This means value and potentially unit were matched
                         val = float(val_match.group(1))
-                        unit = val_match.group(2)
+                        unit = val_match.group(2) # This can be None if no unit like 'cm' or 'in' was present
                         if unit == 'cm': width_val = Cm(val)
                         elif unit == 'in': width_val = Inches(val)
-                        else: print(f"Warning: Width unit '{unit}' for image {image_path} not directly supported.")
-                    elif r'\textwidth' in width_str: 
-                        print(f"Warning: Relative width '{width_str}' for image {image_path} not supported.")
+                        elif unit is None and r'\textwidth' in width_str: # e.g. width=0.8\textwidth
+                            print(f"Warning: Relative width '{width_str}' for image {image_path} not supported. Using default fallback width of 6 inches.")
+                            width_val = Inches(6)
+                        elif unit is None: # Matched a number but no recognized unit and not textwidth
+                            print(f"Warning: Width '{width_str}' for image {image_path} has an unrecognized or missing unit. Adding image with original dimensions.")
+                            # width_val remains None, image added with original dimensions
+                        else: # unit is not None and not 'cm' or 'in'
+                            print(f"Warning: Width unit '{unit}' for image {image_path} not directly supported. Adding image with original dimensions.")
+                            # width_val remains None
+                    elif r'\textwidth' in width_str: # No specific value like '0.8' was matched, but textwidth is present (e.g. width=\textwidth)
+                        print(f"Warning: Relative width '{width_str}' for image {image_path} not supported. Using default fallback width of 6 inches.")
+                        width_val = Inches(6)
                     else: 
-                        print(f"Warning: Could not parse width '{width_str}' for image {image_path}.")
+                        print(f"Warning: Could not parse width '{width_str}' for image {image_path}. Adding image with original dimensions.")
+                        # width_val remains None
                 
                 if width_val: doc.add_picture(image_path, width=width_val)
                 else: doc.add_picture(image_path)
             except Exception as e:
-                print(f"Error adding image {image_path}: {e}. Skipping.")
+                print(f"Error adding image {image_path}: {type(e).__name__} - {e}. Skipping.")
                 p = doc.add_paragraph(); add_runs_for_formatted_text(p, f"[Error adding image: {image_path}]")
     doc.save(output_docx_path)
 
@@ -420,6 +430,7 @@ def run_internal_parser_tests():
         {"name": "test_parse_itemize_list_simple", "latex_input": r"\begin{itemize}\item First item\item Second item\end{itemize}", "expected_json": [{'type': 'list_item_bullet', 'content': [{'type': 'text', 'value': 'First item'}]}, {'type': 'list_item_bullet', 'content': [{'type': 'text', 'value': 'Second item'}]}]},
         {"name": "test_parse_image_no_options", "latex_input": r"\includegraphics{images/my_pic.png}", "expected_json": [{'type': 'image', 'path': 'images/my_pic.png', 'options': {}}]},
         {"name": "test_parse_image_with_width_option", "latex_input": r"\includegraphics[width=10cm]{images/another_pic.jpeg}", "expected_json": [{'type': 'image', 'path': 'images/another_pic.jpeg', 'options': {'width': '10cm'}}]},
+        {"name": "test_parse_image_with_textwidth_option", "latex_input": r"\includegraphics[width=0.5\textwidth]{images/test_pic.png}", "expected_json": [{'type': 'image', 'path': 'images/test_pic.png', 'options': {'width': '0.5\textwidth'}}]},
         {"name": "test_parse_citet_with_prenote", "latex_input": r"A citation \citet[see p.~15]{ref1} here.", "expected_json": [{'type': 'paragraph', 'content': [{'type': 'text', 'value': 'A citation '}, {'type': 'citation', 'command': 'citet', 'keys': ['ref1'], 'prenote': 'see p.~15', 'postnote': ''}, {'type': 'text', 'value': ' here.'}]}]},
         {"name": "test_parse_citep_multiple_keys", "latex_input": r"Another one \citep{ref2, ref3}.", "expected_json": [{'type': 'paragraph', 'content': [{'type': 'text', 'value': 'Another one '}, {'type': 'citation', 'command': 'citep', 'keys': ['ref2', 'ref3'], 'prenote': '', 'postnote': ''}, {'type': 'text', 'value': '.'}]}]}
     ]
