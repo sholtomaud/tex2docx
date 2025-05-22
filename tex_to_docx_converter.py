@@ -376,7 +376,7 @@ def generate_docx(json_data: list, output_docx_path: str):
             image_path = item.get('path')
             options = item.get('options', {})
             if not os.path.exists(image_path):
-                print(f"Warning: Image not found at {image_path}. Skipping.")
+                print(f"Warning: Image not found at {image_path}. Skipping.", file=sys.stderr)
                 p = doc.add_paragraph()
                 add_runs_for_formatted_text(p, f"[Image not found: {image_path}]")
                 continue
@@ -391,25 +391,25 @@ def generate_docx(json_data: list, output_docx_path: str):
                         if unit == 'cm': width_val = Cm(val)
                         elif unit == 'in': width_val = Inches(val)
                         elif unit is None and r'\textwidth' in width_str: # e.g. width=0.8\textwidth
-                            print(f"Warning: Relative width '{width_str}' for image {image_path} not supported. Using default fallback width of 6 inches.")
+                            print(f"Warning: Relative width '{width_str}' for image {image_path} not supported. Using default fallback width of 6 inches.", file=sys.stderr)
                             width_val = Inches(6)
                         elif unit is None: # Matched a number but no recognized unit and not textwidth
-                            print(f"Warning: Width '{width_str}' for image {image_path} has an unrecognized or missing unit. Adding image with original dimensions.")
+                            print(f"Warning: Width '{width_str}' for image {image_path} has an unrecognized or missing unit. Adding image with original dimensions.", file=sys.stderr)
                             # width_val remains None, image added with original dimensions
                         else: # unit is not None and not 'cm' or 'in'
-                            print(f"Warning: Width unit '{unit}' for image {image_path} not directly supported. Adding image with original dimensions.")
+                            print(f"Warning: Width unit '{unit}' for image {image_path} not directly supported. Adding image with original dimensions.", file=sys.stderr)
                             # width_val remains None
                     elif r'\textwidth' in width_str: # No specific value like '0.8' was matched, but textwidth is present (e.g. width=\textwidth)
-                        print(f"Warning: Relative width '{width_str}' for image {image_path} not supported. Using default fallback width of 6 inches.")
+                        print(f"Warning: Relative width '{width_str}' for image {image_path} not supported. Using default fallback width of 6 inches.", file=sys.stderr)
                         width_val = Inches(6)
                     else: 
-                        print(f"Warning: Could not parse width '{width_str}' for image {image_path}. Adding image with original dimensions.")
+                        print(f"Warning: Could not parse width '{width_str}' for image {image_path}. Adding image with original dimensions.", file=sys.stderr)
                         # width_val remains None
                 
                 if width_val: doc.add_picture(image_path, width=width_val)
                 else: doc.add_picture(image_path)
             except Exception as e:
-                print(f"Error adding image {image_path}: {type(e).__name__} - {e}. Skipping and re-raising.")
+                print(f"Error adding image {image_path}: {type(e).__name__} - {e}. Skipping and re-raising.", file=sys.stderr)
                 p = doc.add_paragraph(); add_runs_for_formatted_text(p, f"[Error adding image: {image_path}]")
                 raise e
     doc.save(output_docx_path)
@@ -474,7 +474,7 @@ def main():
 
     if not args.input_file or not args.output_file:
         parser.print_help()
-        print("\nError: input_file and output_file are required unless --run-internal-tests is specified.")
+        print("\nError: input_file and output_file are required unless --run-internal-tests is specified.", file=sys.stderr)
         sys.exit(1)
 
     try:
@@ -482,10 +482,10 @@ def main():
         with open(args.input_file, 'r', encoding='utf-8') as f:
             latex_text = f.read()
     except FileNotFoundError:
-        print(f"Error: Input file '{args.input_file}' not found.")
+        print(f"Error: Input file '{args.input_file}' not found.", file=sys.stderr)
         sys.exit(1)
     except Exception as e: 
-        print(f"Error reading input file '{args.input_file}': {e}")
+        print(f"Error reading input file '{args.input_file}': {e}", file=sys.stderr)
         sys.exit(1)
 
     try:
@@ -493,7 +493,7 @@ def main():
         generate_docx(parsed_json_data, args.output_file)
         print(f"Conversion successful! Output written to '{args.output_file}'")
     except Exception as e:
-        print(f"An error occurred during LaTeX parsing or DOCX generation: {e}")
+        print(f"An error occurred during LaTeX parsing or DOCX generation: {e}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":
