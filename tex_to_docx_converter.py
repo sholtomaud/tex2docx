@@ -25,59 +25,109 @@ CITATION_COMMANDS = [
 ]
 
 def _apply_basic_formatting_to_str(text_segment: str) -> str:
-    if not text_segment: return ""
-    # Using raw strings for regex patterns
-    content = re.sub(r'\\textbf\{(.*?)\}', r'**\1**', text_segment)
-    content = re.sub(r'\\textit\{(.*?)\}', r'*\1*', content)
-    return content
+    # This function is being deprecated by the new process_inline_elements logic
+    # but kept for now to avoid breaking other parts if they call it.
+    # New logic directly handles bold/italic within process_inline_elements.
+    if not text_segment: return [] 
+    parts = re.split(r'(\\textbf\{.*?\})|(\\textit\{.*?\})', text_segment)
+    processed_parts = []
+    for part in parts:
+        if not part: continue
+        if part.startswith('\\textbf{') and part.endswith('}'):
+            processed_parts.append({'type': 'text', 'value': '**' + part[8:-1] + '**'})
+        elif part.startswith('\\textit{') and part.endswith('}'):
+            processed_parts.append({'type': 'text', 'value': '*' + part[8:-1] + '*'})
+        else:
+            processed_parts.append({'type': 'text', 'value': part})
+    return processed_parts
 
 def process_inline_elements(text_line: str) -> list:
-    elements = []
+    # New logic: directly parse text_line for text, bold, italic, and citations
+    final_elements = []
     current_pos = 0
-    processed_line = _apply_basic_formatting_to_str(text_line)
 
-    while current_pos < len(processed_line):
-        earliest_match = None
-        earliest_match_pos = len(processed_line)
-        command_name_for_match = None
-        match_obj_for_match = None
+    # Regex to find \textbf{}, \textit{}, or any citation command
+    # Non-greedy match for content within braces: (.*?)
+    # Citation commands are already defined in CITATION_COMMANDS
+    
+    # Construct a combined regex pattern for all known inline commands
+    # Order matters if commands can be substrings of each other (not typical for these)
+    inline_patterns = []
+    # Add textbf and textit first
+    inline_patterns.append(r'(\\textbf\{(.*?)\})')
+    inline_patterns.append(r'(\\textit\{(.*?)\})')
+    # Add citation commands
+    for _, cmd_re in CITATION_COMMANDS:
+        inline_patterns.append(f'({cmd_re.pattern})') # Use .pattern to get the string regex
 
-        for cmd_name, cmd_re in CITATION_COMMANDS:
-            match_in_processed = cmd_re.search(processed_line, current_pos)
-            if match_in_processed and match_in_processed.start() < earliest_match_pos:
-                earliest_match_pos = match_in_processed.start()
-                earliest_match = match_in_processed
-                command_name_for_match = cmd_name
-                match_obj_for_match = match_in_processed
+    # Combine all patterns with OR operator
+    combined_pattern_str = "|".join(inline_patterns)
+    tokenizer_re = re.compile(combined_pattern_str)
 
-        if earliest_match:
-            if earliest_match.start() > current_pos:
-                pre_text = processed_line[current_pos:earliest_match.start()]
-                elements.append({'type': 'text', 'value': pre_text})
-            
-            prenote = ""
-            keys_str = ""
-            if command_name_for_match == 'citeauthor':
-                keys_str = match_obj_for_match.group(1)
-            else: 
-                prenote = match_obj_for_match.group(1) if match_obj_for_match.group(1) else ""
-                keys_str = match_obj_for_match.group(2)
-            
-            parsed_keys = [k.strip() for k in keys_str.split(',')]
-            elements.append({
-                'type': 'citation',
-                'command': command_name_for_match,
-                'keys': parsed_keys,
-                'prenote': prenote.strip(),
-                'postnote': ""
-            })
-            current_pos = earliest_match.end()
-        else:
-            if current_pos < len(processed_line):
-                post_text = processed_line[current_pos:]
-                elements.append({'type': 'text', 'value': post_text})
+    while current_pos < len(text_line):
+        match = tokenizer_re.search(text_line, current_pos)
+
+        if not match:
+            # No more special commands, the rest is plain text
+            if current_pos < len(text_line):
+                final_elements.append({'type': 'text', 'value': text_line[current_pos:]})
             break
-    return elements
+
+        # Add preceding text if any
+        if match.start() > current_pos:
+            final_elements.append({'type': 'text', 'value': text_line[current_pos:match.start()]})
+        
+        # Determine which group matched to identify the command
+        # The combined regex will have many groups. We need to find which one captured.
+        # Group 0 is the whole match. Group 1 is \textbf content, Group 2 is its content.
+        # Group 3 is \textit content, Group 4 is its content.
+        # Then citation groups follow.
+        
+        # Check \textbf (groups 1 and 2)
+        if match.group(1): # Full \textbf{content} match
+            final_elements.append({'type': 'text', 'value': f"**{match.group(2)}**"}) # Content is group 2
+        # Check \textit (groups 3 and 4)
+        elif match.group(3): # Full \textit{content} match
+            final_elements.append({'type': 'text', 'value': f"*{match.group(4)}*"}) # Content is group 4
+        else:
+            # Must be a citation. Iterate through CITATION_COMMANDS to find which one.
+            # The match object `match` is from `tokenizer_re`. We need to re-match with individual citation regexes
+            # on the matched segment to correctly parse groups for prenotes/postnotes.
+            # This is because the group indices from tokenizer_re are hard to map back.
+            
+            citation_matched_here = False
+            # Check which citation command regex matches at `match.start()`
+            for cmd_name, cmd_re_obj in CITATION_COMMANDS:
+                # Use match.group(0) which is the full matched segment by tokenizer_re
+                # then try to match this segment with specific citation regex
+                citation_specific_match = cmd_re_obj.fullmatch(match.group(0)) # Use fullmatch on the segment
+                if citation_specific_match:
+                    prenote = ""
+                    keys_str = ""
+                    if cmd_name == 'citeauthor':
+                        keys_str = citation_specific_match.group(1)
+                    else: 
+                        prenote = citation_specific_match.group(1) if citation_specific_match.group(1) else ""
+                        keys_str = citation_specific_match.group(2)
+                    
+                    parsed_keys = [k.strip() for k in keys_str.split(',')]
+                    final_elements.append({
+                        'type': 'citation',
+                        'command': cmd_name,
+                        'keys': parsed_keys,
+                        'prenote': prenote.strip(),
+                        'postnote': "" 
+                    })
+                    citation_matched_here = True
+                    break # Found the specific citation type
+            if not citation_matched_here:
+                # Should not happen if tokenizer_re is correct and includes all citation patterns
+                # But as a fallback, treat unrecognized match as text
+                final_elements.append({'type': 'text', 'value': match.group(0)})
+
+        current_pos = match.end()
+        
+    return [elem for elem in final_elements if elem.get('value') or elem.get('type') == 'citation']
 
 def parse_latex_options(options_str: str) -> dict:
     options = {}
@@ -95,84 +145,129 @@ def parse_latex_to_json(latex_content: str) -> list:
     current_paragraph_text_accumulator = [] 
     in_itemize_env = False
     in_enumerate_env = False
+    # Accumulator for list items, as they might span multiple lines if not handled by \item
+    current_list_item_accumulator = [] 
     
     def flush_paragraph():
         nonlocal current_paragraph_text_accumulator, json_output
         if current_paragraph_text_accumulator:
             full_paragraph_str = " ".join(current_paragraph_text_accumulator).strip()
             if full_paragraph_str:
-                 json_output.append({'type': 'paragraph', 'content': process_inline_elements(full_paragraph_str)})
+                json_output.append({'type': 'paragraph', 'content': process_inline_elements(full_paragraph_str)})
             current_paragraph_text_accumulator = []
 
-    for line_idx, raw_line in enumerate(lines):
-        line = raw_line.strip()
-
-        # Environment handling - using raw strings for environment checks
-        if line == r'\begin{itemize}': # Corrected: was 'egin{itemize}'
-            flush_paragraph()
-            in_itemize_env = True
-            continue
-        if line == r'\end{itemize}':
-            flush_paragraph()
-            in_itemize_env = False
-            continue
-        if line == r'\begin{enumerate}': # Corrected: was 'egin{enumerate}'
-            flush_paragraph()
-            in_enumerate_env = True
-            continue
-        if line == r'\end{enumerate}':
-            flush_paragraph()
-            in_enumerate_env = False
-            continue
-
-        if in_itemize_env or in_enumerate_env:
-            item_match = re.match(r'\\item\s*(.*)', line) # Using raw string
-            if item_match:
-                flush_paragraph() 
-                item_content_line = item_match.group(1).strip()
+    def flush_list_item():
+        nonlocal current_list_item_accumulator, json_output, in_itemize_env, in_enumerate_env
+        if current_list_item_accumulator:
+            full_item_str = " ".join(current_list_item_accumulator).strip()
+            if full_item_str:
                 list_type = 'list_item_bullet' if in_itemize_env else 'list_item_ordered'
-                if item_content_line:
-                    json_output.append({'type': list_type, 'content': process_inline_elements(item_content_line)})
-            else: 
-                current_paragraph_text_accumulator.append(line) # Using stripped line as per original logic
-            if line_idx == len(lines) - 1: flush_paragraph()
-            continue
-        
-        if not line:
+                json_output.append({'type': list_type, 'content': process_inline_elements(full_item_str)})
+            current_list_item_accumulator = []
+
+    env_item_pattern = re.compile(
+        r'(\\begin\{(itemize|enumerate)\})|'
+        r'(\\end\{(itemize|enumerate)\})|'
+        r'(\\item(?:\s+|$))'  # \item followed by space or end of string
+    )
+    # Standalone command patterns (ensure they are checked on a line-by-line basis)
+    title_pattern = re.compile(r'\\title\{(.*)\}')
+    section_pattern = re.compile(r'\\section\{(.*)\}')
+    subsection_pattern = re.compile(r'\\subsection\{(.*)\}')
+    includegraphics_pattern = re.compile(r'\\includegraphics(?:\[(.*?)\])?\{(.*?)\}')
+
+    # Process content line by line primarily for standalone commands,
+    # then segment by segment for environments within those lines.
+    input_lines = latex_content.splitlines()
+    line_idx = 0
+
+    while line_idx < len(input_lines):
+        current_line_stripped = input_lines[line_idx].strip()
+        line_idx += 1 # Consume line
+
+        if not current_line_stripped: # Handle empty or whitespace-only lines
+            # An empty line flushes current item (if multi-line) and current paragraph.
+            # It does not necessarily end the list environment itself.
+            flush_list_item()
             flush_paragraph()
             continue
 
-        # Standalone commands - using raw strings for regex
-        title_match = re.match(r'\\title\{(.*)\}', line)
+        # Check for standalone commands that occupy the entire line
+        title_match = title_pattern.fullmatch(current_line_stripped)
+        section_match = section_pattern.fullmatch(current_line_stripped)
+        subsection_match = subsection_pattern.fullmatch(current_line_stripped)
+        image_match = includegraphics_pattern.fullmatch(current_line_stripped)
+
         if title_match:
-            flush_paragraph()
-            json_output.append({'type': 'title', 'content': _apply_basic_formatting_to_str(title_match.group(1).strip())})
+            flush_paragraph(); flush_list_item() # Ensure previous context is cleared
+            title_str = title_match.group(1).strip()
+            content_elements = process_inline_elements(title_str)
+            concatenated_content = "".join(el.get('value', '') for el in content_elements)
+            json_output.append({'type': 'title', 'content': concatenated_content})
             continue
-
-        section_match = re.match(r'\\section\{(.*)\}', line)
-        if section_match:
-            flush_paragraph()
-            json_output.append({'type': 'heading1', 'content': _apply_basic_formatting_to_str(section_match.group(1).strip())})
+        elif section_match:
+            flush_paragraph(); flush_list_item()
+            section_str = section_match.group(1).strip()
+            content_elements = process_inline_elements(section_str)
+            concatenated_content = "".join(el.get('value', '') for el in content_elements)
+            json_output.append({'type': 'heading1', 'content': concatenated_content})
             continue
-
-        subsection_match = re.match(r'\\subsection\{(.*)\}', line)
-        if subsection_match:
-            flush_paragraph()
-            json_output.append({'type': 'heading2', 'content': _apply_basic_formatting_to_str(subsection_match.group(1).strip())})
+        elif subsection_match:
+            flush_paragraph(); flush_list_item()
+            subsection_str = subsection_match.group(1).strip()
+            content_elements = process_inline_elements(subsection_str)
+            concatenated_content = "".join(el.get('value', '') for el in content_elements)
+            json_output.append({'type': 'heading2', 'content': concatenated_content})
             continue
-        
-        image_match = re.match(r'\\includegraphics(?:\[(.*?)\])?\{(.*?)\}', line)
-        if image_match:
-            flush_paragraph()
+        elif image_match:
+            flush_paragraph(); flush_list_item()
             options_str = image_match.group(1)
             image_path = image_match.group(2).strip()
             options_dict = parse_latex_options(options_str if options_str else "")
             json_output.append({'type': 'image', 'path': image_path, 'options': options_dict})
             continue
-        
-        current_paragraph_text_accumulator.append(line)
 
-    flush_paragraph()
+        # If not a standalone command fully matching the line,
+        # process the line for environments, items, and text segments.
+        processed_upto_in_line = 0
+        while processed_upto_in_line < len(current_line_stripped):
+            segment_to_parse = current_line_stripped[processed_upto_in_line:]
+            match = env_item_pattern.search(segment_to_parse)
+            
+            text_before_command = segment_to_parse[:match.start()] if match else segment_to_parse
+            
+            if text_before_command:
+                if in_itemize_env or in_enumerate_env:
+                    current_list_item_accumulator.append(text_before_command)
+                else:
+                    current_paragraph_text_accumulator.append(text_before_command)
+                processed_upto_in_line += len(text_before_command)
+            
+            if not match: break # No more env/item commands in this segment
+
+            command_full_match = match.group(0)
+            begin_env_match = match.group(1); env_type_begin = match.group(2)
+            end_env_match = match.group(3); env_type_end = match.group(4) # For \end{...}
+            item_cmd_match = match.group(5)
+
+            if begin_env_match:
+                flush_paragraph(); flush_list_item() # Clear context before starting list
+                if env_type_begin == 'itemize': in_itemize_env = True
+                elif env_type_begin == 'enumerate': in_enumerate_env = True
+            elif end_env_match:
+                flush_list_item() # Finalize last item
+                if env_type_end == 'itemize' and in_itemize_env: in_itemize_env = False
+                elif env_type_end == 'enumerate' and in_enumerate_env: in_enumerate_env = False
+                # Do not flush_paragraph here, as text might follow on the same line after \end{env}
+            elif item_cmd_match:
+                if in_itemize_env or in_enumerate_env: flush_list_item() # Finalize previous item
+                else: current_paragraph_text_accumulator.append(command_full_match) # \item outside list
+            
+            processed_upto_in_line += len(command_full_match)
+        
+    # After all lines are processed
+    flush_list_item() 
+    flush_paragraph() 
     return json_output
 
 # --- DOCX Generation --- (Assumed correct from previous steps)
@@ -320,9 +415,9 @@ def run_internal_parser_tests():
         {"name": "test_parse_section", "latex_input": r"\section{Section One}", "expected_json": [{'type': 'heading1', 'content': 'Section One'}]},
         {"name": "test_parse_subsection", "latex_input": r"\subsection{Subsection A}", "expected_json": [{'type': 'heading2', 'content': 'Subsection A'}]},
         {"name": "test_parse_simple_paragraph_exact", "latex_input": "Just a plain paragraph.", "expected_json": [{'type': 'paragraph', 'content': [{'type': 'text', 'value': 'Just a plain paragraph.'}]}]},
-        {"name": "test_parse_paragraph_with_bold", "latex_input": r"Some \textbf{bold} text.", "expected_json": [{'type': 'paragraph', 'content': [{'type': 'text', 'value': 'Some **bold** text.'}]}]}, # Adjusted
-        {"name": "test_parse_paragraph_with_italic", "latex_input": r"An \textit{italic} word.", "expected_json": [{'type': 'paragraph', 'content': [{'type': 'text', 'value': 'An *italic* word.'}]}]}, # Adjusted
-        {"name": "test_parse_itemize_list_simple", "latex_input": r"\begin{itemize}\item First item\item Second item\end{itemize}", "expected_json": [{'type': 'list_item_bullet', 'content': [{'type': 'text', 'value': 'First item'}]}, {'type': 'list_item_bullet', 'content': [{'type': 'text', 'value': 'Second item'}]}]}, # This will still fail, needs parser fix
+        {"name": "test_parse_paragraph_with_bold", "latex_input": r"Some \textbf{bold} text.", "expected_json": [{'type': 'paragraph', 'content': [{'type': 'text', 'value': 'Some '}, {'type': 'text', 'value': '**bold**'}, {'type': 'text', 'value': ' text.'}]}]},
+        {"name": "test_parse_paragraph_with_italic", "latex_input": r"An \textit{italic} word.", "expected_json": [{'type': 'paragraph', 'content': [{'type': 'text', 'value': 'An '}, {'type': 'text', 'value': '*italic*'}, {'type': 'text', 'value': ' word.'}]}]},
+        {"name": "test_parse_itemize_list_simple", "latex_input": r"\begin{itemize}\item First item\item Second item\end{itemize}", "expected_json": [{'type': 'list_item_bullet', 'content': [{'type': 'text', 'value': 'First item'}]}, {'type': 'list_item_bullet', 'content': [{'type': 'text', 'value': 'Second item'}]}]},
         {"name": "test_parse_image_no_options", "latex_input": r"\includegraphics{images/my_pic.png}", "expected_json": [{'type': 'image', 'path': 'images/my_pic.png', 'options': {}}]},
         {"name": "test_parse_image_with_width_option", "latex_input": r"\includegraphics[width=10cm]{images/another_pic.jpeg}", "expected_json": [{'type': 'image', 'path': 'images/another_pic.jpeg', 'options': {'width': '10cm'}}]},
         {"name": "test_parse_citet_with_prenote", "latex_input": r"A citation \citet[see p.~15]{ref1} here.", "expected_json": [{'type': 'paragraph', 'content': [{'type': 'text', 'value': 'A citation '}, {'type': 'citation', 'command': 'citet', 'keys': ['ref1'], 'prenote': 'see p.~15', 'postnote': ''}, {'type': 'text', 'value': ' here.'}]}]},
