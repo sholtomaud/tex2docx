@@ -463,8 +463,8 @@ def run_internal_parser_tests():
 
 def main():
     parser = argparse.ArgumentParser(description='Convert LaTeX .tex file to .docx with Zotero citations.')
-    parser.add_argument('input_file', nargs='?', default=None, help='Path to the input LaTeX (.tex) file (optional if running internal tests)')
-    parser.add_argument('output_file', nargs='?', default=None, help='Path for the output DOCX (.docx) file (optional if running internal tests)')
+    parser.add_argument('input_file', nargs='?', default=None, help='Path to the input LaTeX (.tex) file (optional if running internal tests)') # type: ignore
+    parser.add_argument('output_file', nargs='?', default=None, help='Path for the output DOCX (.docx) file (optional if running internal tests)') # type: ignore
     parser.add_argument('--run-internal-tests', action='store_true', help='Run embedded parser unit tests and exit.')
     args = parser.parse_args()
 
@@ -479,7 +479,7 @@ def main():
 
     try:
         print(f"Starting conversion of '{args.input_file}' to '{args.output_file}'...")
-        with open(args.input_file, 'r', encoding='utf-8') as f:
+        with open(args.input_file, 'r', encoding='utf-8') as f: # type: ignore
             latex_text = f.read()
     except FileNotFoundError:
         print(f"Error: Input file '{args.input_file}' not found.", file=sys.stderr)
@@ -490,7 +490,7 @@ def main():
 
     try:
         parsed_json_data = parse_latex_to_json(latex_text)
-        generate_docx(parsed_json_data, args.output_file)
+        generate_docx(parsed_json_data, args.output_file) # type: ignore
         print(f"Conversion successful! Output written to '{args.output_file}'")
     except Exception as e:
         print(f"An error occurred during LaTeX parsing or DOCX generation: {e}", file=sys.stderr)
