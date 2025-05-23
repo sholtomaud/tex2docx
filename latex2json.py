@@ -124,10 +124,12 @@ class LatexToJsonConverter:
         original_text = text
         for cmd, replacement in self.macros.items():
             escaped_cmd = re.escape(cmd)
+            # Ensure the replacement is treated as a string
+            repl_str = str(replacement)
             try:
-                text = re.sub(r"\\" + escaped_cmd + r"(?!\w)", lambda m: replacement, text)
-            except re.error: # Fallback for simple replacement if regex fails (e.g. complex command name)
-                text = text.replace(f"\\{cmd}", replacement)
+                text = re.sub(r"\\" + escaped_cmd + r"(?!\w)", lambda m: repl_str, text)
+            except re.error: # Fallback for simple replacement if regex fails
+                text = text.replace(f"\\{cmd}", repl_str)
         return self._expand_macros(text, depth + 1) if text != original_text else text
 
     def _parse_preamble(self, preamble_text):
@@ -291,29 +293,67 @@ class LatexToJsonConverter:
         return [item for item in merged_items if item.get("text", "").strip() or item.get("type") != "text"]
 
     def _find_image_path(self, image_name):
-        # (Implementation as before)
-        if os.path.isabs(image_name) and os.path.exists(image_name): return image_name
-        for prefix in [""] + self.graphicspath:
-            current_prefix_path = os.path.join(self.base_dir, prefix)
+        if os.path.isabs(image_name) and os.path.exists(image_name):
+            return image_name
+        
+        # Ensure self.graphicspath is always a list, even if initially None or empty string
+        # (though __init__ sets it to ["./", ""])
+        search_paths = self.graphicspath if isinstance(self.graphicspath, list) else []
+        
+        # Check relative to base_dir first (equivalent to an empty prefix in graphicspath)
+        # and also with self.graphicspath explicitly.
+        # The initialized self.graphicspath = ["./", ""] covers the CWD/base_dir implicitly.
+        for prefix in search_paths:
+            # Ensure prefix is a string, as os.path.join might fail otherwise
+            # if self.graphicspath could somehow contain non-string elements.
+            # However, _parse_preamble ensures it's a list of strings.
+            current_prefix_path = os.path.join(self.base_dir, str(prefix))
             path_to_check = os.path.normpath(os.path.join(current_prefix_path, image_name))
-            if os.path.exists(path_to_check): return path_to_check
+            if os.path.exists(path_to_check):
+                return path_to_check
+        
+        # Fallback: check directly in base_dir if not already covered by an empty/'.' prefix
+        # This is redundant if "./" or "" is always in self.graphicspath
+        # path_in_base = os.path.normpath(os.path.join(self.base_dir, image_name))
+        # if os.path.exists(path_in_base):
+        #    return path_in_base
+
         print(f"Warning: Image '{image_name}' not found with graphicspaths: {self.graphicspath} relative to {self.base_dir}")
-        return image_name
+        return image_name # Return original name if not found, downstream will handle missing path
 
     def _parse_latex_dimension(self, dim_str):
-        # (Implementation as before)
-        if not dim_str: return None
-        dim_str = self._expand_macros(dim_str)
-        match = re.match(r"([\d.]+)\s*(in|cm|mm|pt|em|ex|\\textwidth|\\linewidth)?", dim_str)
+        if not dim_str: 
+            return None
+        
+        dim_str = self._expand_macros(str(dim_str)) # Ensure dim_str is a string before macro expansion
+        dim_str = dim_str.strip() # Strip leading/trailing whitespace
+
+        # Regex to capture value and optional unit. Units can be standard (pt, in, etc.)
+        # or LaTeX commands like \textwidth.
+        # Allows for decimal numbers, including those starting with '.' (e.g., .5in)
+        # The \s* handles spaces between the number and the unit.
+        regex = r"^([0-9]*\.?[0-9]+)\s*(pt|in|cm|mm|em|ex|%|\\textwidth|\\linewidth)?$"
+        match = re.match(regex, dim_str)
+        
         if match:
-            val = float(match.group(1))
-            unit = match.group(2)
-            if unit == "in": return val
-            if unit == "cm": return val / 2.54
-            if unit == "mm": return val / 25.4
-            if unit == "pt": return val / 72.0
-            if unit in ["\\textwidth", "\\linewidth"]: return val * self.current_text_width_inches
-            return val / 72.0 
+            value_str = match.group(1)
+            unit_str = match.group(2)
+            
+            try:
+                value = float(value_str)
+            except ValueError:
+                return None # Should not happen if regex matches, but as a safeguard
+
+            if unit_str:
+                if unit_str.startswith("\\"):
+                    unit = unit_str[1:] # Remove leading backslash for command units
+                else:
+                    unit = unit_str
+            else:
+                unit = "pt" # Default unit if not specified
+            
+            return {"value": value, "unit": unit}
+        
         return None
 
     def _parse_body(self, body_text_raw):
