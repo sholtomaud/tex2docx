@@ -1,0 +1,217 @@
+{
+    "properties": {
+        "title": "Sharelatex Example",
+        "author": "Unknown Author",
+        "subject": "",
+        "created": "2025-05-23T04:47:42.724469Z"
+    },
+    "template_path": "",
+    "page_layout": {
+        "orientation": "portrait",
+        "margins": {
+            "top": 1.0,
+            "bottom": 1.0,
+            "left": 1.0,
+            "right": 1.0
+        }
+    },
+    "header_footer": {},
+    "custom_styles": [],
+    "content": [
+        {
+            "type": "heading1",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Introduction to MPP"
+                }
+            ]
+        },
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "The restoration of fish migration in rivers has been recognized as a globally significant factor"
+                },
+                {
+                    "type": "citation",
+                    "field_data": {
+                        "key": "cox_fish_2023, cox_fish_2023a",
+                        "optional_arg": ""
+                    },
+                    "display_text": "cox_fish_2023, cox_fish_2023a"
+                },
+                {
+                    "type": "text",
+                    "text": ". The present project considers these impacts."
+                },
+                {
+                    "type": "text",
+                    "text": "This is bold.",
+                    "formatting": {
+                        "bold": true
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": "And this is"
+                },
+                {
+                    "type": "text",
+                    "text": "italic and { nested bold",
+                    "formatting": {
+                        "italic": true
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": "} . H.T. Odum {} is important."
+                }
+            ]
+        },
+        {
+            "type": "heading2",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "A Sub-section"
+                }
+            ]
+        },
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Some text in a subsection."
+                },
+                {
+                    "type": "text",
+                    "text": "Monospace text here",
+                    "formatting": {
+                        "font_name": "monospace"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": "."
+                }
+            ]
+        },
+        {
+            "type": "normal",
+            "formatting": {
+                "left_indent": 0.5,
+                "right_indent": 0.5
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "``The Mismanagement of Power cannot be better shown, than by comparing the Effect of the Engine at Marly, with the Effects of the Water-works at London-Bridge.''"
+                },
+                {
+                    "type": "citation",
+                    "field_data": {
+                        "key": "desaguliers_course_1734",
+                        "optional_arg": "p. 530"
+                    },
+                    "display_text": "desaguliers_course_1734"
+                }
+            ]
+        },
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "image",
+                    "path": "test.JPG",
+                    "preserve_aspect_ratio": true,
+                    "width_inches": 5.34,
+                    "height_inches": 2.0,
+                    "caption": "Overall figure caption for `Noria"
+                }
+            ]
+        },
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "An example list:"
+                }
+            ]
+        },
+        {
+            "type": "list",
+            "list_type": "bullet",
+            "level": 0,
+            "items": [
+                {
+                    "text": "First item with bold part."
+                },
+                {
+                    "type": "text",
+                    "text": "Second item."
+                }
+            ]
+        },
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "A simple table:"
+                }
+            ]
+        },
+        {
+            "type": "table",
+            "data": [
+                [
+                    {
+                        "type": "text",
+                        "text": "{ |l|c|r| } Left"
+                    },
+                    {
+                        "type": "text",
+                        "text": "Center",
+                        "formatting": {
+                            "bold": true
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": "Right"
+                    }
+                ],
+                [
+                    {
+                        "type": "text",
+                        "text": "data"
+                    },
+                    "more data",
+                    {
+                        "type": "text",
+                        "text": "final data"
+                    }
+                ]
+            ],
+            "formatting": {
+                "autofit": true
+            }
+        },
+        {
+            "type": "page_break"
+        },
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Some more text after a page break. https://example.com"
+                }
+            ]
+        }
+    ]
+}

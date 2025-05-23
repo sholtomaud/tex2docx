@@ -1,0 +1,214 @@
+{
+    "properties": {
+        "title": "Enhanced Document Example",
+        "author": "John Doe",
+        "subject": "Advanced Research Paper"
+    },
+    "page_layout": {
+        "orientation": "portrait",
+        "margins": {
+            "top": 1.0,
+            "bottom": 1.0,
+            "left": 1.25,
+            "right": 1.25
+        }
+    },
+    "header_footer": {
+        "header": {
+            "text": "Research Paper - Page Header",
+            "alignment": "center"
+        },
+        "footer": {
+            "text": "© 2024 John Doe",
+            "alignment": "right"
+        }
+    },
+    "custom_styles": [
+        {
+            "name": "CustomTitle",
+            "type": "paragraph",
+            "paragraph_format": {
+                "font_name": "Arial Black",
+                "font_size": 18,
+                "bold": true
+            }
+        }
+    ],
+    "content": [
+        {
+            "type": "title_paragraph",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Enhanced Document Example" 
+                }
+            ]
+        },
+        {
+            "type": "normal",
+            "formatting": {
+                "alignment": "justify",
+                "line_spacing": 1.5,
+                "space_after": 12
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "This document demonstrates enhanced capabilities including "
+                },
+                {
+                    "type": "text",
+                    "text": "advanced formatting",
+                    "formatting": {
+                        "bold": true,
+                        "color": "#D63384"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": ", tables, lists, and more sophisticated layout options."
+                }
+            ]
+        },
+        {
+    "type": "normal", 
+    "formatting": {
+        "alignment": "center", 
+        "space_before": 6,     
+        "space_after": 6       
+    },
+    "content": [
+        {
+            "type": "image",
+            "path": "images/test.JPG",
+            "width_inches": 3, 
+            "preserve_aspect_ratio": true,
+            "caption": "The old book.",
+            "caption_formatting": {
+                "italic": true,
+                "font_size": 9
+            },
+            "alt_text": "Close-up of an old book's spine."
+        }
+    ]
+},
+
+{
+    "type": "normal",
+    "content": [
+        { "type": "text", "text": "Text can continue here in a new paragraph after the image and its caption." }
+    ]
+},
+        {
+            "type": "heading1",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Heading Example"
+                }
+            ]
+        },
+        
+        {
+            "type": "heading2",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Table Example"
+                }
+            ]
+        },
+        {
+            "type": "table",
+            "style": "Table Grid",
+            "data": [
+                ["Feature", "Status", "Priority"],
+                ["Tables", "✓ Complete", "High"],
+                ["Lists", "✓ Complete", "Medium"],
+                ["Styling", "✓ Complete", "High"]
+            ],
+            "formatting": {
+                "autofit": true
+            }
+        },
+        {
+            "type": "heading2",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "List Examples"
+                }
+            ]
+        },
+        {
+            "type": "list",
+            "list_type": "bullet",
+            "items": [
+                "Enhanced text formatting with colors and styles",
+                "Table creation with multiple formats",
+                {
+                    "text": "Nested lists with custom formatting",
+                    "formatting": {
+                        "italic": true
+                    },
+                    "subitems": [
+                        "Sub-item 1",
+                        "Sub-item 2"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "page_break"
+        },
+        {
+            "type": "heading2",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Citations and Bibliography"
+                }
+            ]
+        },
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Here's some text with a citation "
+                },
+                {
+                    "type": "citation",
+                    "field_data": {
+                        "citationID": "TGxluuVt",
+                        "citationItems": [
+                            {
+                                "id": "38960",
+                                "uris": ["http://zotero.org/users/39885/items/AWH2QZ6J"]
+                            }
+                        ]
+                    },
+                    "display_text": "(Cox and Felder 2023)"
+                },
+                {
+                    "type": "text",
+                    "text": "."
+                }
+            ]
+        },
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "bibliography",
+                    "field_data": {
+                        "uncited": [],
+                        "omitted": [],
+                        "custom": []
+                    },
+                    "display_text": "References"
+                }
+            ]
+        }
+    ]
+}

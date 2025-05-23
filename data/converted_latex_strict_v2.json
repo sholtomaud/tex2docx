@@ -1,0 +1,287 @@
+{
+    "properties": {
+        "title": "My Awesome Document with Style",
+        "author": "Dr. LaTeX User",
+        "subject": "",
+        "created": "2025-05-23T06:09:04.432536Z"
+    },
+    "template_path": "",
+    "page_layout": {
+        "orientation": "portrait",
+        "margins": {
+            "top": 1.0,
+            "bottom": 1.0,
+            "left": 1.0,
+            "right": 1.0
+        }
+    },
+    "content": [
+        {
+            "type": "title_paragraph",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "My Awesome Document with Style"
+                }
+            ]
+        },
+        {
+            "type": "heading1",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Introduction to My Test Doc"
+                }
+            ]
+        },
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "This is the first paragraph. It includes some "
+                },
+                {
+                    "type": "text",
+                    "text": "bold text",
+                    "formatting": {
+                        "bold": true
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": " and some "
+                },
+                {
+                    "type": "text",
+                    "text": "italic text",
+                    "formatting": {
+                        "italic": true
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": ".\nHere is a sentence with {very important information}.\nAnd now, "
+                },
+                {
+                    "type": "text",
+                    "text": "{bold and italic",
+                    "formatting": {
+                        "bold": true
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": "}! Followed by "
+                },
+                {
+                    "type": "text",
+                    "text": "underlined text",
+                    "formatting": {
+                        "underline": true
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": ".\nWe can also have "
+                },
+                {
+                    "type": "text",
+                    "text": "monospace text",
+                    "formatting": {
+                        "font_name": "Courier New"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": ". A URL: https://example.com.\nA citation "
+                },
+                {
+                    "type": "citation",
+                    "display_text": "[knuth1984]",
+                    "field_data": {
+                        "key": "knuth1984",
+                        "latex_command": "\\cite[p.~25]{knuth1984}"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": ". Another one "
+                },
+                {
+                    "type": "citation",
+                    "display_text": "[einstein1905]",
+                    "field_data": {
+                        "key": "einstein1905",
+                        "latex_command": "\\citep{einstein1905}"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": "."
+                }
+            ]
+        },
+        {
+            "type": "heading2",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Lists and Things"
+                }
+            ]
+        },
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "An itemized list:"
+                }
+            ]
+        },
+        {
+            "type": "list",
+            "list_type": "bullet",
+            "level": 0,
+            "items": [
+                {
+                    "text": "First simple item."
+                },
+                {
+                    "text": "Second item with bold parts and italic parts."
+                },
+                {
+                    "text": "A blue item."
+                },
+                {
+                    "text": "A green item using group syntax."
+                }
+            ]
+        },
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "A numbered list:"
+                }
+            ]
+        },
+        {
+            "type": "list",
+            "list_type": "number",
+            "level": 0,
+            "items": [
+                {
+                    "text": "Number one."
+                },
+                {
+                    "text": "Number two, also with {emphasis}."
+                }
+            ]
+        },
+        {
+            "type": "heading1",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Figures and Tables"
+                }
+            ]
+        },
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "image",
+                    "path": "/Users/sholtomaud/Development/tex2docx/example_image.png",
+                    "preserve_aspect_ratio": true,
+                    "width_inches": 3.13,
+                    "height_inches": 1.97,
+                    "caption": "This is a caption for the example image."
+                }
+            ]
+        },
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Here is a table:"
+                }
+            ]
+        },
+        {
+            "type": "table",
+            "data": [
+                [
+                    {
+                        "text": "{|l|c|r|}\n\nHeader 1"
+                    },
+                    {
+                        "text": "Header 2"
+                    },
+                    {
+                        "text": "Header 3"
+                    }
+                ],
+                [
+                    {
+                        "text": "Cell 2.1"
+                    },
+                    {
+                        "text": "Cell 2.2 italic",
+                        "formatting": {
+                            "italic": true
+                        }
+                    },
+                    {
+                        "text": "Cell 2.3 with https://example.org"
+                    }
+                ]
+            ]
+        },
+        {
+            "type": "normal",
+            "formatting": {
+                "left_indent": 0.5,
+                "right_indent": 0.5
+            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": "This is a quotation environment. It should be indented.\nIt can also contain "
+                },
+                {
+                    "type": "text",
+                    "text": "formatted text",
+                    "formatting": {
+                        "bold": true
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": "."
+                }
+            ]
+        },
+        {
+            "type": "page_break"
+        },
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "This is after a page break."
+                }
+            ]
+        },
+        {
+            "type": "bibliography",
+            "display_text": "References",
+            "field_data": {}
+        }
+    ]
+}
