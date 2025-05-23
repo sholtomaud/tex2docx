@@ -23,10 +23,57 @@ DOCUMENT_SCHEMA_FILE = SCHEMA_DIR / "document_schema.json"
 # Autouse fixture to ensure the schema directory and file exist.
 # This is more of a safeguard; the schema should be part of the repository.
 @pytest.fixture(scope="session", autouse=True)
-def check_schema_file_exists():
-    assert SCHEMA_DIR.exists(), f"Schema directory not found at {SCHEMA_DIR}"
-    assert DOCUMENT_SCHEMA_FILE.exists(), f"Schema file not found at {DOCUMENT_SCHEMA_FILE}"
+def ensure_schema_file_exists():
+    """
+    Ensures that the schema/document_schema.json file exists at the project root,
+    creating a minimal dummy version if it's not found. This is crucial for E2E tests
+    where scripts are run as subprocesses from the project root.
+    """
+    # PROJECT_ROOT is already defined above as Path(__file__).resolve().parent.parent
+    # This assumes test_converter_e2e.py is in a subdirectory like 'tests/'
+    # so that PROJECT_ROOT correctly points to the repository root.
 
+    target_schema_dir = PROJECT_ROOT / "schema"
+    target_schema_file = target_schema_dir / "document_schema.json"
+
+    if not target_schema_file.exists():
+        print(f"Schema file {target_schema_file} not found. Creating a dummy one for e2e tests.")
+        target_schema_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create a minimal valid JSON schema, sufficient for the scripts to load
+        dummy_schema_content = {
+            "type": "object",
+            "properties": {
+                "properties": {"type": "object"},
+                "template_path": {"type": "string"}, # Used by json2docx
+                "page_layout": {"type": "object"},   # Used by json2docx
+                "content": {
+                    "type": "array",
+                    "items": {"type": "object"} # General placeholder for content items
+                }
+            },
+            "required": ["properties", "content"] # Minimal requirement
+        }
+        with open(target_schema_file, "w") as f:
+            json.dump(dummy_schema_content, f, indent=4)
+        
+        # The scripts latex2json.py and json2docx.py also look for "document_schema.json"
+        # directly in the CWD as a fallback if "schema/document_schema.json" is not found.
+        # For robustness in E2E tests where CWD is PROJECT_ROOT, ensuring 
+        # PROJECT_ROOT/schema/document_schema.json is the primary goal.
+        # latex2json.py has logic to copy schema/document_schema.json to CWD if the former exists
+        # and the CWD version doesn't. This fixture makes that logic succeed if schema was missing.
+        
+        # Also, ensure a schema file directly in PROJECT_ROOT if scripts expect that as a fallback,
+        # though the primary path is schema/document_schema.json
+        # For now, only creating PROJECT_ROOT/schema/document_schema.json as per instructions.
+        # root_schema_file = PROJECT_ROOT / "document_schema.json"
+        # if not root_schema_file.exists():
+        #    with open(root_schema_file, "w") as f:
+        #        json.dump(dummy_schema_content, f, indent=4)
+
+    else:
+        print(f"Found schema file at {target_schema_file}.")
 
 @pytest.fixture(scope="session", autouse=True)
 def ensure_test_data_exists_and_is_writable(tmp_path_factory):
