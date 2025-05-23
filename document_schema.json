@@ -1,0 +1,260 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "properties": {
+            "type": "object",
+            "properties": {
+                "title": {"type": "string"},
+                "author": {"type": "string"},
+                "subject": {"type": "string"},
+                "created": {"type": "string", "format": "date-time"}
+            }
+        },
+        "template_path": {"type": "string"},
+        "page_layout": {
+            "type": "object",
+            "properties": {
+                "orientation": {"type": "string", "enum": ["portrait", "landscape"]},
+                "margins": {
+                    "type": "object",
+                    "properties": {
+                        "top": {"type": "number", "minimum": 0},
+                        "bottom": {"type": "number", "minimum": 0},
+                        "left": {"type": "number", "minimum": 0},
+                        "right": {"type": "number", "minimum": 0}
+                    }
+                }
+            }
+        },
+        "header_footer": {
+            "type": "object",
+            "properties": {
+                "header": {
+                    "type": "object",
+                    "properties": {
+                        "text": {"type": "string"},
+                        "alignment": {"type": "string", "enum": ["left", "center", "right"]}
+                    },
+                    "required": ["text"]
+                },
+                "footer": {
+                    "type": "object",
+                    "properties": {
+                        "text": {"type": "string"},
+                        "alignment": {"type": "string", "enum": ["left", "center", "right"]}
+                    },
+                    "required": ["text"]
+                }
+            }
+        },
+        "custom_styles": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "type": {"type": "string", "enum": ["paragraph", "character"]},
+                    "paragraph_format": {
+                        "type": "object",
+                        "properties": {
+                            "font_name": {"type": "string"},
+                            "font_size": {"type": "number", "minimum": 1},
+                            "bold": {"type": "boolean"},
+                            "italic": {"type": "boolean"}
+                        }
+                    },
+                    "font_format": {
+                        "type": "object",
+                        "properties": {
+                            "font_name": {"type": "string"},
+                            "font_size": {"type": "number", "minimum": 1},
+                            "bold": {"type": "boolean"},
+                            "italic": {"type": "boolean"}
+                        }
+                    }
+                },
+                "required": ["name", "type"]
+            }
+        },
+        "content": {
+            "type": "array",
+            "items": {
+                "oneOf": [
+                    {"$ref": "#/definitions/paragraph"},
+                    {"$ref": "#/definitions/table"},
+                    {"$ref": "#/definitions/list"},
+                    {"$ref": "#/definitions/page_break"}
+                ]
+            }
+        }
+    },
+    "definitions": {
+        "text_formatting": {
+            "type": "object",
+            "properties": {
+                "bold": {"type": "boolean"},
+                "italic": {"type": "boolean"},
+                "underline": {"type": "boolean"},
+                "strike": {"type": "boolean"},
+                "font_size": {"type": "number", "minimum": 1},
+                "font_name": {"type": "string"},
+                "color": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
+                "highlight": {"type": "string"},
+                "superscript": {"type": "boolean"},
+                "subscript": {"type": "boolean"}
+            }
+        },
+        "paragraph_formatting": {
+            "type": "object",
+            "properties": {
+                "alignment": {"type": "string", "enum": ["left", "center", "right", "justify"]},
+                "line_spacing": {"oneOf": [
+                    {"type": "string", "enum": ["single", "double", "1.5"]},
+                    {"type": "number", "minimum": 0.1}
+                ]},
+                "space_before": {"type": "number", "minimum": 0},
+                "space_after": {"type": "number", "minimum": 0},
+                "left_indent": {"type": "number"},
+                "right_indent": {"type": "number"},
+                "first_line_indent": {"type": "number"}
+            }
+        },
+        "content_item": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {"const": "text"},
+                        "text": {"type": "string"},
+                        "formatting": {"$ref": "#/definitions/text_formatting"}
+                    },
+                    "required": ["type", "text"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {"const": "citation"},
+                        "field_data": {"type": "object"},
+                        "display_text": {"type": "string"}
+                    },
+                    "required": ["type", "field_data", "display_text"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {"const": "bibliography"},
+                        "field_data": {"type": "object"},
+                        "display_text": {"type": "string"}
+                    },
+                    "required": ["type", "display_text"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {"const": "image"},
+                        "path": {"type": "string"},
+                        "width_inches": {"type": "number", "minimum": 0.1},
+                        "height_inches": {"type": "number", "minimum": 0.1},
+                        "preserve_aspect_ratio": {"type": "boolean"},
+                        "caption": {"type": "string"},
+                        "caption_formatting": {"$ref": "#/definitions/text_formatting"},
+                        "alt_text": {"type": "string"}
+                    },
+                    "required": ["type", "path"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {"const": "field"},
+                        "field_code": {"type": "string"},
+                        "display_text": {"type": "string"}
+                    },
+                    "required": ["type", "field_code", "display_text"]
+                }
+            ]
+        },
+        "paragraph": {
+            "type": "object",
+            "properties": {
+                "type": {"type": "string", "enum": ["normal", "title_paragraph", "heading1", "heading2", "heading3", "heading4", "heading5", "heading6", "custom_style","bibliography"]},
+                "style_name": {"type": "string"},
+                "formatting": {"$ref": "#/definitions/paragraph_formatting"},
+                "content": {
+                    "type": "array",
+                    "items": {"$ref": "#/definitions/content_item"}
+                }
+            },
+            "required": ["type"]
+        },
+        "table": {
+            "type": "object", 
+            "properties": {
+                "type": {"const": "table"},
+                "style": {"type": "string"},
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {"type": "string"},
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "text": {"type": "string"},
+                                        "formatting": {"$ref": "#/definitions/text_formatting"}
+                                    },
+                                    "required": ["text"]
+                                }
+                            ]
+                        }
+                    }
+                },
+                "formatting": {
+                    "type": "object",
+                    "properties": {
+                        "autofit": {"type": "boolean"}
+                    }
+                }
+            },
+            "required": ["type", "data"]
+        },
+        "list": {
+            "type": "object",
+            "properties": {
+                "type": {"const": "list"},
+                "list_type": {"type": "string", "enum": ["bullet", "number"]},
+                "level": {"type": "integer", "minimum": 0},
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "oneOf": [
+                            {"type": "string"},
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "text": {"type": "string"},
+                                    "formatting": {"$ref": "#/definitions/text_formatting"},
+                                    "subitems": {
+                                        "type": "array",
+                                        "items": {"type": "string"}
+                                    }
+                                },
+                                "required": ["text"]
+                            }
+                        ]
+                    }
+                }
+            },
+            "required": ["type", "items"]
+        },
+        "page_break": {
+            "type": "object",
+            "properties": {
+                "type": {"const": "page_break"}
+            },
+            "required": ["type"]
+        }
+    }
+}

@@ -1,0 +1,80 @@
+{
+    "properties": {
+        "title": "Test Document for json2docx fix",
+        "author": "Test Author",
+        "created": "2023-10-27T10:00:00Z"
+    },
+    "content": [
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "This is "
+                },
+                {
+                    "type": "text",
+                    "text": "{", "formatting": {"bold": true}
+                },
+                {
+                    "type": "text",
+                    "text": "bold italic text", "formatting": {"bold": true, "italic": true}
+                },
+                {
+                    "type": "text",
+                    "text": "}", "formatting": {"bold": true}
+                },
+                {
+                    "type": "text",
+                    "text": "."
+                }
+            ]
+        },
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Another example: "
+                },
+                {
+                    "type": "text",
+                    "text": "{", "formatting": {"bold": true}
+                },
+                {
+                    "type": "text",
+                    "text": "important message", "formatting": {"bold": true, "color": "#FF0000"}
+                },
+                {
+                    "type": "text",
+                    "text": "}", "formatting": {"bold": true}
+                },
+                {
+                    "type": "text",
+                    "text": "."
+                }
+            ]
+        },
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "A case for the two-part merge: "
+                },
+                {
+                    "type": "text",
+                    "text": "{lost inner content", "formatting": {"underline": true}
+                },
+                {
+                    "type": "text",
+                    "text": "}", "formatting": {"underline": true}
+                },
+                {
+                    "type": "text",
+                    "text": "."
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,40 @@
+{
+    "properties": {
+        "title": "Untitled Document",
+        "author": "Unknown Author",
+        "subject": "",
+        "created": "2025-05-23T07:39:33.662464Z"
+    },
+    "template_path": "",
+    "page_layout": {
+        "orientation": "portrait",
+        "margins": {
+            "top": 1.0,
+            "bottom": 1.0,
+            "left": 1.0,
+            "right": 1.0
+        }
+    },
+    "content": [
+        {
+            "type": "normal",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "This is "
+                },
+                {
+                    "type": "text",
+                    "text": "t{bold italic text",
+                    "formatting": {
+                        "bold": true
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": "}.\nThis is an t{important message}."
+                }
+            ]
+        }
+    ]
+}
