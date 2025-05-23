@@ -1,0 +1,56 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for \includegraphics
+
+\title{Complex Document}
+\author{Another Test Author}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{First Section}
+This is a paragraph in the first section.
+
+\subsection{Subsection 1.1}
+This subsection contains a list.
+\begin{itemize}
+    \item Item A
+    \item Item B
+    \item Item C
+\end{itemize}
+
+\subsection{Subsection 1.2}
+This subsection has a numbered list.
+\begin{enumerate}
+    \item Numbered One
+    \item Numbered Two
+\end{enumerate}
+
+\section{Second Section}
+This section includes an image and a table.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.5\textwidth]{test_image.png}
+    \caption{This is a test image.}
+    \label{fig:test}
+\end{figure}
+
+Here is a simple table:
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{|l|r|}
+        \hline
+        Left Column & Right Column \\
+        \hline
+        Cell 1L & Cell 1R \\
+        Cell 2L & Cell 2R \\
+        \hline
+    \end{tabular}
+    \caption{A simple test table.}
+    \label{tab:test}
+\end{table}
+
+This is a citation test \citep{test_key}.
+
+\end{document}
