@@ -1,0 +1,23 @@
+\documentclass{article}
+\usepackage{graphicx}
+
+\title{Document with Missing Image}
+\author{Error Tester}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Image Test}
+This section attempts to include an image that does not exist.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.5\textwidth]{nonexistent_image.png}
+    \caption{A missing image.}
+    \label{fig:missing}
+\end{figure}
+
+Another paragraph after the figure attempt.
+
+\end{document}

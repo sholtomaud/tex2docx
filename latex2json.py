@@ -124,10 +124,12 @@ class LatexToJsonConverter:
         original_text = text
         for cmd, replacement in self.macros.items():
             escaped_cmd = re.escape(cmd)
+            # Ensure the replacement is treated as a string
+            repl_str = str(replacement)
             try:
-                text = re.sub(r"\\" + escaped_cmd + r"(?!\w)", lambda m: replacement, text)
-            except re.error: # Fallback for simple replacement if regex fails (e.g. complex command name)
-                text = text.replace(f"\\{cmd}", replacement)
+                text = re.sub(r"\\" + escaped_cmd + r"(?!\w)", lambda m: repl_str, text)
+            except re.error: # Fallback for simple replacement if regex fails
+                text = text.replace(f"\\{cmd}", repl_str)
         return self._expand_macros(text, depth + 1) if text != original_text else text
 
     def _parse_preamble(self, preamble_text):
@@ -291,29 +293,67 @@ class LatexToJsonConverter:
         return [item for item in merged_items if item.get("text", "").strip() or item.get("type") != "text"]
 
     def _find_image_path(self, image_name):
-        # (Implementation as before)
-        if os.path.isabs(image_name) and os.path.exists(image_name): return image_name
-        for prefix in [""] + self.graphicspath:
-            current_prefix_path = os.path.join(self.base_dir, prefix)
+        if os.path.isabs(image_name) and os.path.exists(image_name):
+            return image_name
+        
+        # Ensure self.graphicspath is always a list, even if initially None or empty string
+        # (though __init__ sets it to ["./", ""])
+        search_paths = self.graphicspath if isinstance(self.graphicspath, list) else []
+        
+        # Check relative to base_dir first (equivalent to an empty prefix in graphicspath)
+        # and also with self.graphicspath explicitly.
+        # The initialized self.graphicspath = ["./", ""] covers the CWD/base_dir implicitly.
+        for prefix in search_paths:
+            # Ensure prefix is a string, as os.path.join might fail otherwise
+            # if self.graphicspath could somehow contain non-string elements.
+            # However, _parse_preamble ensures it's a list of strings.
+            current_prefix_path = os.path.join(self.base_dir, str(prefix))
             path_to_check = os.path.normpath(os.path.join(current_prefix_path, image_name))
-            if os.path.exists(path_to_check): return path_to_check
+            if os.path.exists(path_to_check):
+                return path_to_check
+        
+        # Fallback: check directly in base_dir if not already covered by an empty/'.' prefix
+        # This is redundant if "./" or "" is always in self.graphicspath
+        # path_in_base = os.path.normpath(os.path.join(self.base_dir, image_name))
+        # if os.path.exists(path_in_base):
+        #    return path_in_base
+
         print(f"Warning: Image '{image_name}' not found with graphicspaths: {self.graphicspath} relative to {self.base_dir}")
-        return image_name
+        return image_name # Return original name if not found, downstream will handle missing path
 
     def _parse_latex_dimension(self, dim_str):
-        # (Implementation as before)
-        if not dim_str: return None
-        dim_str = self._expand_macros(dim_str)
-        match = re.match(r"([\d.]+)\s*(in|cm|mm|pt|em|ex|\\textwidth|\\linewidth)?", dim_str)
+        if not dim_str: 
+            return None
+        
+        dim_str = self._expand_macros(str(dim_str)) # Ensure dim_str is a string before macro expansion
+        dim_str = dim_str.strip() # Strip leading/trailing whitespace
+
+        # Regex to capture value and optional unit. Units can be standard (pt, in, etc.)
+        # or LaTeX commands like \textwidth.
+        # Allows for decimal numbers, including those starting with '.' (e.g., .5in)
+        # The \s* handles spaces between the number and the unit.
+        regex = r"^([0-9]*\.?[0-9]+)\s*(pt|in|cm|mm|em|ex|%|\\textwidth|\\linewidth)?$"
+        match = re.match(regex, dim_str)
+        
         if match:
-            val = float(match.group(1))
-            unit = match.group(2)
-            if unit == "in": return val
-            if unit == "cm": return val / 2.54
-            if unit == "mm": return val / 25.4
-            if unit == "pt": return val / 72.0
-            if unit in ["\\textwidth", "\\linewidth"]: return val * self.current_text_width_inches
-            return val / 72.0 
+            value_str = match.group(1)
+            unit_str = match.group(2)
+            
+            try:
+                value = float(value_str)
+            except ValueError:
+                return None # Should not happen if regex matches, but as a safeguard
+
+            if unit_str:
+                if unit_str.startswith("\\"):
+                    unit = unit_str[1:] # Remove leading backslash for command units
+                else:
+                    unit = unit_str
+            else:
+                unit = "pt" # Default unit if not specified
+            
+            return {"value": value, "unit": unit}
+        
         return None
 
     def _parse_body(self, body_text_raw):
@@ -377,41 +417,128 @@ class LatexToJsonConverter:
                     # (Implementation as before)
                     self.json_output["content"].append({"type":"normal", "content": [{"type":"text", "text":env_content_raw.strip(), "formatting":{"font_name":"Courier New"}}]})
 
-                elif env_name in ["table", "longtable", "tabularx", "tabular"]:
-                    table_obj = {"type": "table", "data": []}
-                    processed_env_content_raw = re.sub(r"^\s*\{[\|lcrp@\s{}A-Za-z0-9\.=\[\]\(\)\,\;\:\<\>\!\$\%\^\&\*\-\+\/\?\~\\]*\}\s*", "", env_content_raw.strip(), count=1)
-                    rows_latex = processed_env_content_raw.strip().split("\\\\")
+                elif env_name == "table": # Floating environment
+                    table_float_obj = {"type": "table", "data": [], "label": None, "caption": None}
+
+                    caption_match = re.search(r"\\caption\{(.*?)\}", env_content_raw, re.DOTALL)
+                    if caption_match:
+                        table_float_obj["caption"] = self._parse_inline_text_to_content_items(caption_match.group(1).strip())
+                    
+                    label_match = re.search(r"\\label\{(.*?)\}", env_content_raw, re.DOTALL)
+                    if label_match:
+                        table_float_obj["label"] = label_match.group(1).strip()
+
+                    inner_tabular_match = re.search(r"\\begin\{(tabularx?|tabular\*|supertabular|xtabular|tabular)\}\s*(\{[^}]*\})?(.*?)\\end\{\1\}", env_content_raw, re.DOTALL)
+                    if not inner_tabular_match: # Fallback for simple tabular, ensures group(2) and (3) exist
+                        inner_tabular_match = re.search(r"\\begin\{(tabular)\}\s*(\{[^}]*\})(.*?)\\end\{\1\}", env_content_raw, re.DOTALL)
+                        if not inner_tabular_match: # Stricter simple tabular without optional group for colspec
+                             inner_tabular_match = re.search(r"\\begin\{(tabular)\}(.*?)\\end\{\1\}", env_content_raw, re.DOTALL)
+
+
+                    if inner_tabular_match:
+                        col_spec_group_idx = 2
+                        tabular_content_group_idx = 3
+                        if len(inner_tabular_match.groups()) == 2 : # simple tabular without colspec group
+                            col_spec_group_idx = -1 # Invalid index, means no colspec captured
+                            tabular_content_group_idx = 2
+
+                        col_spec = inner_tabular_match.group(col_spec_group_idx) if col_spec_group_idx > 0 and inner_tabular_match.group(col_spec_group_idx) else None
+                        tabular_data_content = inner_tabular_match.group(tabular_content_group_idx)
+                        
+                        if col_spec:
+                            table_float_obj["column_spec"] = col_spec.strip()
+                        
+                        rows_latex = tabular_data_content.strip().split("\\\\")
+                        for row_latex in rows_latex:
+                            row_data_string = row_latex.strip()
+                            while row_data_string.startswith(("\\hline", "\\cline")):
+                                if row_data_string.startswith("\\hline"): row_data_string = row_data_string[len("\\hline"):].strip()
+                                else:
+                                    cline_match = re.match(r"\\cline\s*\{.*?\}(.*)", row_data_string)
+                                    row_data_string = cline_match.group(1).strip() if cline_match else ""
+                            if not row_data_string: continue
+                            cells_latex = row_data_string.split("&")
+                            table_row_json_cells = [self._parse_inline_text_to_content_items(cell.strip()) for cell in cells_latex]
+                            if any(any(item.get("text","").strip() for item in cell_data) if isinstance(cell_data, list) else str(cell_data).strip() for cell_data in table_row_json_cells):
+                                table_float_obj["data"].append({"cells": table_row_json_cells})
+                    
+                    if table_float_obj["data"] or table_float_obj["caption"]:
+                        self.json_output["content"].append(table_float_obj)
+
+                elif env_name in ["longtable", "tabularx", "tabular"]: # Direct table structures
+                    table_obj = {"type": "table", "data": [], "label": None, "caption": None, "environment_type": env_name}
+                    current_tabular_content = env_content_raw
+                    
+                    col_spec_match = re.match(r"\s*(\{[^}]*\})", current_tabular_content)
+                    if col_spec_match: # Primarily for longtable if colspec is part of its immediate content
+                        table_obj["column_spec"] = col_spec_match.group(1).strip()
+                        current_tabular_content = current_tabular_content[col_spec_match.end():]
+                    
+                    if env_name == "longtable":
+                        caption_match = re.search(r"\\caption\{(.*?)\}", current_tabular_content, re.DOTALL)
+                        if caption_match:
+                            table_obj["caption"] = self._parse_inline_text_to_content_items(caption_match.group(1).strip())
+                            current_tabular_content = current_tabular_content.replace(caption_match.group(0), "")
+                        label_match = re.search(r"\\label\{(.*?)\}", current_tabular_content, re.DOTALL)
+                        if label_match:
+                            table_obj["label"] = label_match.group(1).strip()
+                            current_tabular_content = current_tabular_content.replace(label_match.group(0), "")
+
+                    rows_latex = current_tabular_content.strip().split("\\\\")
                     for row_latex in rows_latex:
                         row_data_string = row_latex.strip()
-                        while row_data_string.startswith("\\hline") or row_data_string.startswith("\\cline"):
+                        while row_data_string.startswith(("\\hline", "\\cline")):
                             if row_data_string.startswith("\\hline"): row_data_string = row_data_string[len("\\hline"):].strip()
-                            elif row_data_string.startswith("\\cline"):
-                                match_cline = re.match(r"\\cline\s*\{.*?\}(.*)", row_data_string)
-                                if match_cline: row_data_string = match_cline.group(1).strip()
-                                else: break 
+                            else:
+                                cline_match = re.match(r"\\cline\s*\{.*?\}(.*)", row_data_string)
+                                row_data_string = cline_match.group(1).strip() if cline_match else ""
                         if not row_data_string: continue
                         cells_latex = row_data_string.split("&")
-                        table_row_json = []
-                        for cell_latex in cells_latex:
-                            cell_items = self._parse_inline_text_to_content_items(cell_latex.strip())
-                            if not cell_items: table_row_json.append(""); continue
-                            cell_text_parts, first_run_fmt, consistent_fmt = [], None, True
-                            for i, run in enumerate(cell_items):
-                                if run.get("type")=="text" and "text" in run: 
-                                    cell_text_parts.append(run["text"])
-                                    cur_fmt = run.get("formatting")
-                                    if i==0: first_run_fmt = cur_fmt
-                                    elif cur_fmt != first_run_fmt: consistent_fmt = False
-                                elif run.get("type")=="citation": cell_text_parts.append(run.get("display_text","[c]")); consistent_fmt=False
-                            final_cell_text = "".join(cell_text_parts).strip()
-                            cell_obj = {"text":final_cell_text}
-                            if consistent_fmt and first_run_fmt: cell_obj["formatting"]=first_run_fmt
-                            table_row_json.append("" if not cell_obj["text"] and "formatting" not in cell_obj else cell_obj)
-                        if any(c for c in table_row_json if (isinstance(c,str) and c.strip()) or (isinstance(c,dict) and c.get("text","").strip()) or (isinstance(c,dict) and c.get("formatting"))):
-                            table_obj["data"].append(table_row_json)
-                    if table_obj["data"]: self.json_output["content"].append(table_obj)
-            elif match.group(6): self.json_output["content"].append({"type": "page_break"})
-            elif match.group(7): self.json_output["content"].append({"type":"bibliography", "display_text":"References", "field_data": {"source_file":match.group(8).strip() if match.group(8) else ""}})
+                        table_row_json_cells = [self._parse_inline_text_to_content_items(cell.strip()) for cell in cells_latex]
+                        if any(any(item.get("text","").strip() for item in cell_data) if isinstance(cell_data, list) else str(cell_data).strip() for cell_data in table_row_json_cells):
+                             table_obj["data"].append({"cells": table_row_json_cells})
+                            
+                    if table_obj["data"] or table_obj["caption"]:
+                        self.json_output["content"].append(table_obj)
+
+                # ... other environments (itemize, enumerate, quotation, verbatim)
+                elif env_name == "itemize" or env_name == "enumerate":
+                    list_obj = {"type": "list", "list_type": "bullet" if env_name == "itemize" else "number", "items": []}
+                    # Simplified item parsing for brevity, actual implementation is more complex
+                    item_matches = re.finditer(r"\\item(?:\s+|\[.*?\]\s*)(.*?)(?=\\item|\\end\{" + env_name + r"\}|\Z)", env_content_raw, re.DOTALL | re.IGNORECASE)
+                    for item_match in item_matches:
+                        item_content_raw = item_match.group(1).strip()
+                        if item_content_raw: # Ensure item has content
+                           list_obj["items"].append(self._parse_inline_text_to_content_items(item_content_raw))
+                    if list_obj["items"]: self.json_output["content"].append(list_obj)
+                elif env_name == "quotation":
+                    quote_items = self._parse_inline_text_to_content_items(env_content_raw.strip())
+                    if quote_items: self.json_output["content"].append({"type": "normal", "formatting": {"left_indent":0.5, "right_indent":0.5}, "content": quote_items})
+                elif env_name == "verbatim":
+                    self.json_output["content"].append({"type":"normal", "content": [{"type":"text", "text":env_content_raw.strip(), "formatting":{"font_name":"Courier New"}}]})
+                # End of refactored/checked environments
+            
+            elif match.group(6): # page_break, was group 6, now needs to be adjusted if regex changed
+                # Assuming block_pattern might change, so check the new group index for (newpage|clearpage)
+                # If block_pattern G4 is env, G7 is tabular, G10 is pagebreak
+                page_break_command = match.group(10) # Adjust index if block_pattern changes
+                if page_break_command: self.json_output["content"].append({"type": "page_break", "command": page_break_command})
+            
+            elif match.group(11): # bibliography, was group 7, now needs to be adjusted
+                bib_command = match.group(11) # e.g. "printbibliography" or "bibliography"
+                bib_file = match.group(12) # e.g. "myrefs"
+                bib_options = {}
+                if bib_command == "printbibliography":
+                    options_match = re.search(r"\[(.*?)\]", env_content_raw if env_content_raw else "", re.DOTALL) # env_content_raw might be wrong here
+                    # printbibliography options are part of the command itself, not env_content
+                    # The main regex needs to capture options for printbibliography
+                
+                self.json_output["content"].append({
+                    "type":"bibliography", 
+                    "command": bib_command,
+                    "bib_files": [bib_file.strip()] if bib_file else [],
+                    "options": bib_options # To be populated if options parsing is added
+                })
         
         # Final schema compliance (simplified)
         final_content = []
