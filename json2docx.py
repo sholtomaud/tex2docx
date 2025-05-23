@@ -369,7 +369,75 @@ class DocumentGenerator:
             self.apply_paragraph_formatting(paragraph, para_data['formatting'])
         
         # Process content
-        content = para_data.get('content', [])
+        original_content = para_data.get('content', [])
+        new_content = []
+        i = 0
+        n = len(original_content)
+
+        while i < n:
+            item_i = original_content[i]
+            merged = False
+
+            # Check for Three-Part Merge
+            if i + 2 < n:
+                item_i_plus_1 = original_content[i+1]
+                item_i_plus_2 = original_content[i+2]
+
+                # Ensure all are text types and text key exists
+                if (item_i.get('type') == 'text' and item_i_plus_1.get('type') == 'text' and item_i_plus_2.get('type') == 'text' and
+                    isinstance(item_i.get('text'), str) and isinstance(item_i_plus_1.get('text'), str) and isinstance(item_i_plus_2.get('text'), str)):
+                    
+                    text_i = item_i['text']
+                    text_i_plus_1 = item_i_plus_1['text']
+                    text_i_plus_2 = item_i_plus_2['text']
+                    format_i = item_i.get('formatting', {})
+                    format_i_plus_1 = item_i_plus_1.get('formatting', {})
+                    format_i_plus_2 = item_i_plus_2.get('formatting', {})
+
+                    if text_i.startswith('{') and text_i_plus_2 == '}' and format_i == format_i_plus_2:
+                        merged_text = text_i[1:] + text_i_plus_1
+                        merged_formatting = {**format_i, **format_i_plus_1} # Inner (i+1) takes precedence for shared keys
+                        
+                        new_content.append({
+                            "type": "text",
+                            "text": merged_text,
+                            "formatting": merged_formatting
+                        })
+                        i += 3
+                        merged = True
+            
+            # Check for Two-Part Merge (if three-part didn't match)
+            if not merged and i + 1 < n:
+                item_i_plus_1 = original_content[i+1]
+
+                if (item_i.get('type') == 'text' and item_i_plus_1.get('type') == 'text' and
+                    isinstance(item_i.get('text'), str) and isinstance(item_i_plus_1.get('text'), str)):
+
+                    text_i = item_i['text']
+                    text_i_plus_1 = item_i_plus_1['text']
+                    format_i = item_i.get('formatting', {})
+                    format_i_plus_1 = item_i_plus_1.get('formatting', {})
+
+                    if text_i.startswith('{') and text_i_plus_1 == '}' and format_i == format_i_plus_1:
+                        merged_text = text_i[1:]
+                        merged_formatting = format_i
+                        
+                        if merged_text: # Only append if there's actual text after removing '{'
+                            new_content.append({
+                                "type": "text",
+                                "text": merged_text,
+                                "formatting": merged_formatting
+                            })
+                        i += 2
+                        merged = True
+
+            # Default Action
+            if not merged:
+                new_content.append(item_i)
+                i += 1
+        
+        # Replace original content with preprocessed content
+        content = new_content
         
         for item in content:
             try:
