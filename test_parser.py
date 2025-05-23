@@ -103,7 +103,7 @@ def test_extract_definitions_newcommand(base_converter):
 
 
 def test_extract_definitions_definecolor(base_converter):
-    """Test \definecolor for 'HTML' and 'rgb' models."""
+    r"""Test \definecolor for 'HTML' and 'rgb' models."""
     preamble_text = r"""
     \definecolor{MyHtmlColor}{HTML}{FF0000}
     \definecolor{MyRgbColor}{rgb}{0.1,0.5,1}
@@ -477,9 +477,7 @@ def test_strip_latex_commands_remove_content(base_converter):
     assert base_converter._strip_latex_commands(r"\justcommand and text", keep_content=False) == " and text" # Command itself is removed
 
 def test_strip_latex_commands_special_chars_and_edge_cases(base_converter):
-    """Test with special LaTeX characters that are also commands e.g. \%."""
-    # If keep_content=True:
-    # \% is like a command with no braces, group 4 is None.
+    r"""Test with special LaTeX characters that are also commands e.g. \%."""
     assert base_converter._strip_latex_commands(r"\% percent", keep_content=True) == r" percent" # \% is stripped, returns ""
     assert base_converter._strip_latex_commands(r"Hello \\ World", keep_content=True) == r"Hello  World" # \\ is stripped
     assert base_converter._strip_latex_commands(r"~ non-breaking", keep_content=True) == r" non-breaking" # ~ is stripped
@@ -519,7 +517,7 @@ def test_parse_inline_text_formatting_commands(base_converter):
         assert base_converter._parse_inline_text_to_content_items(latex) == expected
 
 def test_parse_inline_text_color_commands(base_converter):
-    """Test \textcolor and {\color ...} commands."""
+    r"""Test \textcolor and {\color ...} commands."""
     base_converter.defined_colors = {"MyRed": {"type": "HTML", "value": "FF0000"}}
     
     # \textcolor{color_name}{text}
@@ -569,7 +567,7 @@ def test_parse_inline_text_color_commands(base_converter):
 
 
 def test_parse_inline_text_links(base_converter):
-    """Test \url{} and \href{}{}."""
+    r"""Test \url{} and \href{}{}."""
     latex_url = r"\url{http://example.com}"
     expected_url = [{"type": "link", "url": "http://example.com", "text": "http://example.com"}]
     assert base_converter._parse_inline_text_to_content_items(latex_url) == expected_url
